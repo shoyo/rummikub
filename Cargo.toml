@@ -1,0 +1,9 @@
+[package]
+name = "rummikub"
+version = "0.1.0"
+authors = ["Shoyo Inokuchi <contact@shoyo.dev>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
