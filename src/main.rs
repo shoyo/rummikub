@@ -1,4 +1,5 @@
 /// Copyright (c) 2020, Shoyo Inokuchi
+use std::collections::HashMap;
 
 /// A single Rummikub tile
 enum Tile {
@@ -20,6 +21,7 @@ impl BasicTile {
     }
 }
 
+#[derive(Eq, PartialEq)]
 enum TileColor {
     Black,
     Red,
@@ -60,143 +62,71 @@ fn format_joker(variant: JokerVariant) -> String {
         JokerVariant::Single => "SINGLE".to_string(),
         JokerVariant::Double => "DOUBLE".to_string(),
         JokerVariant::Mirror => "MIRROR".to_string(),
-        JokerVariant::ColorChange => "COLOR_CHANGE".to_string(),
+        JokerVariant::ColorChange => "COLOR CHANGE".to_string(),
     }
 }
 
-enum Set {
-    Run(Run),
-    Group(Group),
+enum Parsing {
+    Run {
+        last_value: TileValue,
+        color: TileColor,
+    },
+    Group {
+        seen: HashMap<TileColor, bool>,
+    },
+    Undetermined,
 }
 
-struct Run {
-    tiles: Vec<Tile>,
+/// Given an ordered sequence of Rummikub tiles, return whether the sequence is valid.
+fn is_valid_set(set: Vec<Tile>) -> bool {
+    if set.len() < 3 {
+        return false;
+    }
+    let mut parsing = Parsing::Undetermined;
+
+    let mut tiles = set.iter().enumerate();
+    while let Some((index, tile)) = tiles.next() {
+        match parsing {
+            Parsing::Run {
+                ref last_value,
+                ref color,
+            } => match tile {
+                Tile::Basic(t) => {
+                    if t.value == 0 || t.value > 13 {
+                        panic!(
+                            "Illegal tile value {}: tiles should be 0 < value <= 13",
+                            t.value
+                        );
+                    }
+                    if t.value != last_value + 1 {
+                        return false;
+                    }
+                    if t.color != *color {
+                        return false;
+                    }
+                }
+                Tile::Joker(j) => {}
+            },
+            Parsing::Group { ref mut seen } => {}
+            Parsing::Undetermined => {}
+        }
+    }
+    return true;
 }
 
-impl Run {
-    fn new(tiles: Vec<Tile>) -> Result<Self, String> {
-        if tiles.len() < 3 {
-            return Err(format!("Attempted to create a run with fewer than 3 tiles"));
-        }
-        let color: TileColor;
-        match tiles[0] {
-            Tile::Basic => color = 
-        }
-        let color = tiles[0].color;
-        for tile in tiles.iter() {}
-        Ok(Self { tiles })
-    }
-
-    fn len(&self) -> u8 {
-        self.end - self.start + 1
-    }
-
-    fn add_tile(&mut self, tile: Tile) -> Result<(), String> {
-        if tile.color != self.color {
-            return Err(format!(
-                "Attempted to insert tile with color {} into run with color {}",
-                format_color(tile.color),
-                format_color(self.color)
-            ));
-        }
-        if tile.value != self.start - 1 || tile.value != self.end + 1 {
-            return Err(format!(
-                "Attempted to insert tile with value {} into run with values {}~{}",
-                tile.value, self.start, self.end
-            ));
-        }
-        if tile.value == self.start - 1 {
-            self.start -= 1;
-        } else {
-            self.end += 1;
-        }
-        Ok(())
-    }
-
-    /// Split the run at the boundary. Self is mutated into front half of the split, while the back
-    /// half of the split is returned.
-    ///
-    /// EXAMPLE (split at boundary "6"):
-    ///
-    /// BEFORE:
-    ///     Original 3 - 4 - 5 - 6 - 7 - 8
-    ///
-    /// AFTER:
-    ///     Original 3 - 4 - 5
-    ///     Returned 6 - 7 - 8
-    fn split(&mut self, boundary: u8) -> Result<Run, String> {
-        if self.len() < 6 {
-            return Err(format!("Attempted to split a run with fewer than 6 tiles"));
-        }
-        if boundary < self.start
-            || boundary - self.start < 3
-            || self.end < boundary
-            || self.end - boundary < 3
-        {
-            return Err(format!(
-                "Attempted to split a run from {}~{} at an invalid boundary of {}",
-                self.start, self.end, boundary
-            ));
-        }
-        let run = Run::new(boundary, self.end, self.color).unwrap();
-        self.end = boundary - 1;
-        Ok(run)
-    }
-
-    /// Split the run and add a tile to the divide. Self is mutated into front half of the split,
-    /// while the back half of the split is returned. The added tile becomes the head of the back
-    /// half.
-    ///
-    /// EXAMPLE (split and add tile "6"):
-    ///
-    /// BEFORE:
-    ///     Original 4 - 5 - 6 - 7 - 8
-    ///
-    /// AFTER:
-    ///     Original 4 - 5 - 6
-    ///     Returned 6 - 7 - 8
-    fn split_and_add_tile(&mut self, tile: Tile) -> Result<Run, String> {
-        if self.len() < 5 {
-            return Err(format!(
-                "Attempted to split and add tile to a run with fewer than 5 tiles"
-            ));
-        }
-        if tile.value < self.start + 2 || tile.value > self.end - 2 {
-            return Err(format!(
-                "Attempted to split a run into insufficient lengths"
-            ));
-        }
-        let run = Run::new(tile.value, self.end, self.color).unwrap();
-        self.end = tile.value;
-        Ok(run)
-    }
-}
-
-struct Group {
-    value: u8,
-    colors: [bool; 4],
-}
-
-impl Group {
-    fn new(value: u8, colors: [bool; 4]) -> Result<Self, ()> {
-        Ok(Self { value, colors })
-    }
-
-    fn add_tile(&mut self, tile: Tile) -> Result<(), String> {
-        Err(format!(""))
-    }
-}
-
-fn can_win(board: Vec<Set>, rack: Vec<Tile>) -> Result<(), ()> {
+fn can_win(board: Vec<Vec<Tile>>, rack: Vec<Tile>) -> Result<(), ()> {
     Err(())
 }
 
 fn main() {
-    let board = vec![];
+    let board = vec![vec![
+        Tile::Basic(BasicTile::new(TileColor::Black, 2)),
+        Tile::Basic(BasicTile::new(TileColor::Black, 3)),
+        Tile::Basic(BasicTile::new(TileColor::Black, 4)),
+    ]];
     let rack = vec![
-        Tile::Basic(BasicTile::new(TileColor::Red, 5)),
-        Tile::Basic(BasicTile::new(TileColor::Red, 6)),
-        Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+        Tile::Basic(BasicTile::new(TileColor::Black, 10)),
+        Tile::Basic(BasicTile::new(TileColor::Blue, 5)),
     ];
 
     match can_win(board, rack) {
@@ -204,5 +134,323 @@ fn main() {
             println!("{:?}", moves);
         }
         Err(_) => println!("No winning move."),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // BASIC RUNS
+
+    #[test]
+    fn test_valid_run() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 5)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_descending_run() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_invalid_short_run() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // BASIC GROUPS
+
+    #[test]
+    fn test_valid_group_with_length_4() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_group_with_length_3() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_group_with_repeated_color() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_invalid_group_run_hybrid() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Orange, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 10)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // SINGLE JOKER
+
+    #[test]
+    fn test_valid_run_with_single_joker() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 10)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_run_with_single_joker() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 9)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_valid_group_with_single_joker() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_run_with_two_single_jokers() {
+        let set = vec![
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_run_with_more_single_jokers_than_in_the_box() {
+        let set = vec![
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // DOUBLE JOKER
+
+    #[test]
+    fn test_valid_run_with_double_joker() {
+        let set = vec![
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_run_with_double_joker() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_valid_run_with_two_double_jokers() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 3)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_run_with_double_joker_2() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 11)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_run_with_double_joker_2() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 11)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // MIRROR JOKER
+
+    #[test]
+    fn test_valid_group_with_mirror() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_run_with_mirror() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_group_with_mirror() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Black, 7)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_invalid_run_with_mirror() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_invalid_run_with_two_mirrors() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // COLOR CHANGE JOKER
+
+    #[test]
+    fn test_valid_run_with_color_change() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 10)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_invalid_run_with_color_change() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 9)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 10)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    #[test]
+    fn test_invalid_run_with_color_change_without_number_skip() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 9)),
+        ];
+        assert_eq!(is_valid_set(set), false);
+    }
+
+    // MIXED JOKERS
+
+    #[test]
+    fn test_valid_mixed_1() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_mixed_2() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Blue, 6)),
+            Tile::Joker(Joker::new(JokerVariant::ColorChange)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::ColorChange)),
+            Tile::Basic(BasicTile::new(TileColor::Blue, 6)),
+        ];
+        assert_eq!(is_valid_set(set), true);
     }
 }
