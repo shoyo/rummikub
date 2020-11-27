@@ -1,5 +1,6 @@
 /// Copyright (c) 2020, Shoyo Inokuchi
 use std::collections::HashMap;
+use std::fmt;
 
 /// A single Rummikub tile
 #[derive(PartialEq)]
@@ -31,16 +32,18 @@ enum TileColor {
     Orange,
 }
 
-type TileValue = u8;
-
-fn format_color(color_code: TileColor) -> String {
-    match color_code {
-        TileColor::Black => "BLACK".to_string(),
-        TileColor::Red => "RED".to_string(),
-        TileColor::Blue => "BLUE".to_string(),
-        TileColor::Orange => "ORANGE".to_string(),
+impl fmt::Display for TileColor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            TileColor::Black => write!(f, "BLACK"),
+            TileColor::Red => write!(f, "RED"),
+            TileColor::Blue => write!(f, "BLUE"),
+            TileColor::Orange => write!(f, "ORANGE"),
+        }
     }
 }
+
+type TileValue = u8;
 
 #[derive(PartialEq)]
 struct Joker {
@@ -61,12 +64,14 @@ enum JokerVariant {
     ColorChange,
 }
 
-fn format_joker(variant: JokerVariant) -> String {
-    match variant {
-        JokerVariant::Single => "SINGLE".to_string(),
-        JokerVariant::Double => "DOUBLE".to_string(),
-        JokerVariant::Mirror => "MIRROR".to_string(),
-        JokerVariant::ColorChange => "COLOR CHANGE".to_string(),
+impl fmt::Display for JokerVariant {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            JokerVariant::Single => write!(f, "SINGLE"),
+            JokerVariant::Double => write!(f, "DOUBLE"),
+            JokerVariant::Mirror => write!(f, "MIRROR"),
+            JokerVariant::ColorChange => write!(f, "COLOR CHANGE"),
+        }
     }
 }
 
