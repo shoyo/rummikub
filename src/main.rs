@@ -78,7 +78,7 @@ impl fmt::Display for JokerVariant {
 enum Parsing {
     Run {
         last_value: TileValue,
-        color: TileColor,
+        allowed: HashMap<TileColor, bool>,
     },
     Group {
         value: TileValue,
@@ -106,14 +106,14 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
         match parsing {
             Parsing::Run {
                 ref mut last_value,
-                ref mut color,
+                ref mut allowed,
             } => match tile {
                 Tile::Basic(t) => {
                     _assert_valid_tile_value(t.value);
                     if t.value != *last_value + 1 {
                         return false;
                     }
-                    if t.color != *color {
+                    if !allowed[&t.color] {
                         return false;
                     }
                     *last_value += 1;
@@ -128,7 +128,13 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                     JokerVariant::Mirror => {
                         return _handle_mirror_joker(&set, index);
                     }
-                    JokerVariant::ColorChange => {}
+                    JokerVariant::ColorChange => {
+                        *last_value += 1;
+                        allowed.insert(TileColor::Black, true);
+                        allowed.insert(TileColor::Red, true);
+                        allowed.insert(TileColor::Blue, true);
+                        allowed.insert(TileColor::Orange, true);
+                    }
                 },
             },
             Parsing::Group {
@@ -171,9 +177,15 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                     match *tile_seen {
                         Some((value, color)) => {
                             if t.value == value + 1 && t.color == color {
+                                let mut allowed = HashMap::new();
+                                allowed.insert(TileColor::Black, false);
+                                allowed.insert(TileColor::Red, false);
+                                allowed.insert(TileColor::Blue, false);
+                                allowed.insert(TileColor::Orange, false);
+                                allowed.insert(color, true);
                                 parsing = Parsing::Run {
                                     last_value: t.value,
-                                    color: color,
+                                    allowed: allowed,
                                 };
                             } else if t.value == value && t.color != color {
                                 let mut seen = HashMap::new();
