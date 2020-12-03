@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::fmt;
 
 /// A single Rummikub tile
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum Tile {
     Basic(BasicTile),
     Joker(Joker),
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct BasicTile {
     color: TileColor,
     value: TileValue,
@@ -24,7 +24,7 @@ impl BasicTile {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 enum TileColor {
     Black,
     Red,
@@ -45,7 +45,7 @@ impl fmt::Display for TileColor {
 
 type TileValue = u8;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 struct Joker {
     variant: JokerVariant,
 }
@@ -56,7 +56,7 @@ impl Joker {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum JokerVariant {
     Single,
     Double,
@@ -186,7 +186,7 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                         }
                     }
                     JokerVariant::Mirror => {
-                        return _handle_mirror_joker(&set, index);
+                        return _is_symmetric(&set, index);
                     }
                     JokerVariant::ColorChange => {
                         *size += 1;
@@ -249,7 +249,7 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                         }
                     }
                     JokerVariant::Mirror => {
-                        return _handle_mirror_joker(&set, index);
+                        return _is_symmetric(&set, index);
                     }
                     JokerVariant::ColorChange => {
                         return false;
@@ -336,7 +336,7 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                         *size += 2;
                     }
                     JokerVariant::Mirror => {
-                        _handle_mirror_joker(&set, index);
+                        _is_symmetric(&set, index);
                     }
                     JokerVariant::ColorChange => match tile_seen {
                         Some(ts) => {
@@ -383,8 +383,8 @@ fn _assert_valid_tile_value(value: TileValue) {
     }
 }
 
-fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
-    if mirror_index == 0 {
+fn _is_symmetric(set: &Vec<Tile>, mirror_index: usize) -> bool {
+    if set.len() < 3 {
         return false;
     }
     let mut left = mirror_index - 1;
@@ -394,9 +394,6 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
     let mut incr_double_joker = false;
 
     while left >= 0 && right < set.len() {
-        if left == 0 && right != set.len() - 1 || left != 0 && right == set.len() {
-            return false;
-        }
         match &set[left] {
             Tile::Basic(bl) => match &set[right] {
                 Tile::Basic(br) => {
@@ -413,7 +410,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                     }
                     JokerVariant::Double => {
                         if incr_double_joker {
-                            right -= 1;
+                            right += 1;
                             incr_double_joker = false;
                         } else {
                             incr_double_joker = true;
@@ -432,7 +429,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                 Tile::Basic(_) => match jl.variant {
                     JokerVariant::Single => {
                         left -= 1;
-                        right -= 1;
+                        right += 1;
                     }
                     JokerVariant::Double => {
                         if incr_double_joker {
@@ -441,7 +438,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                         } else {
                             incr_double_joker = true;
                         }
-                        right -= 1;
+                        right += 1;
                     }
                     JokerVariant::Mirror => {
                         return false;
@@ -454,7 +451,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                     JokerVariant::Single => match jr.variant {
                         JokerVariant::Single => {
                             left -= 1;
-                            right -= 1;
+                            right += 1;
                         }
                         JokerVariant::Double => {
                             if incr_double_joker {
@@ -484,7 +481,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                         }
                         JokerVariant::Double => {
                             left -= 1;
-                            right -= 1;
+                            right += 1;
                         }
                         JokerVariant::Mirror => {
                             return false;
@@ -506,11 +503,17 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                         JokerVariant::Mirror => {
                             return false;
                         }
-                        JokerVariant::ColorChange => continue,
+                        JokerVariant::ColorChange => {
+                            left -= 1;
+                            right += 1;
+                        }
                     },
                 },
             },
         }
+    }
+    if left != 0 || right != set.len() - 1 {
+        panic!("ERROR: left and right indexes mismatched during traversal");
     }
     return true;
 }
