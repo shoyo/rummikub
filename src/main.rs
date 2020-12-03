@@ -121,9 +121,15 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                 Tile::Joker(j) => match j.variant {
                     JokerVariant::Single => {
                         *last_value += 1;
+                        if *last_value > 13 {
+                            return false;
+                        }
                     }
                     JokerVariant::Double => {
                         *last_value += 2;
+                        if *last_value > 13 {
+                            return false;
+                        }
                     }
                     JokerVariant::Mirror => {
                         return _handle_mirror_joker(&set, index);
@@ -177,17 +183,36 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                     match *tile_seen {
                         Some((value, color)) => {
                             if t.value == value + 1 && t.color == color {
+                                // Check that starting value of run is valid.
+                                // Ex. J J 3 4 .. is valid
+                                //     J J 2 3 .. is NOT valid
+                                if *size > value {
+                                    return false;
+                                }
+
+                                // Tile sequence is confirmed to be a run, so change the parser
+                                // state.
                                 let mut allowed = HashMap::new();
                                 allowed.insert(TileColor::Black, false);
                                 allowed.insert(TileColor::Red, false);
                                 allowed.insert(TileColor::Blue, false);
                                 allowed.insert(TileColor::Orange, false);
                                 allowed.insert(color, true);
+
                                 parsing = Parsing::Run {
                                     last_value: t.value,
                                     allowed: allowed,
                                 };
                             } else if t.value == value && t.color != color {
+                                // Check that length of group is valid.
+                                // Ex. J J Red Blue   .. is valid
+                                //     J J J Red Blue .. is NOT valid
+                                if *size > 3 {
+                                    return false;
+                                }
+
+                                // Tile sequence is confirmed to be a group, so change the parser
+                                // state.
                                 let mut seen = HashMap::new();
                                 seen.insert(TileColor::Black, false);
                                 seen.insert(TileColor::Red, false);
@@ -195,6 +220,7 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                                 seen.insert(TileColor::Orange, false);
                                 seen.insert(t.color, true);
                                 seen.insert(color, true);
+
                                 parsing = Parsing::Group {
                                     value: value,
                                     seen: seen,
@@ -205,16 +231,26 @@ fn is_valid_set(set: Vec<Tile>) -> bool {
                             }
                         }
                         None => {
+                            // Check that the current sequence is not an invalid run.
+                            // (Group can be ruled out due to the total length being >= 5.)
+                            // Ex. J J DJ 5 .. is valid
+                            //     J J DJ 4 .. is NOT valid
+                            if *size >= 4 && t.value <= *size {
+                                return false;
+                            }
+
+                            // Update parser state.
                             *tile_seen = Some((t.value, t.color));
+                            *size += 1;
                         }
                     }
                 }
                 Tile::Joker(j) => match j.variant {
                     JokerVariant::Single => {
-                        *size + 1;
+                        *size += 1;
                     }
                     JokerVariant::Double => {
-                        *size + 2;
+                        *size += 2;
                     }
                     JokerVariant::Mirror => {
                         _handle_mirror_joker(&set, index);
