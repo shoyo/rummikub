@@ -92,7 +92,7 @@ enum Parsing {
 }
 
 /// Given an ordered set of Rummikub tiles, return whether the set is valid.
-fn is_valid_set(set: Vec<Tile>) -> bool {
+fn is_valid_set(set: &Vec<Tile>) -> bool {
     if set.len() < 3 {
         return false;
     }
@@ -444,7 +444,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -454,7 +454,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -463,7 +463,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     // BASIC GROUPS
@@ -476,7 +476,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
             Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -486,7 +486,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
             Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -497,7 +497,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
             Tile::Basic(BasicTile::new(TileColor::Orange, 7)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -509,7 +509,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 10)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     // SINGLE JOKER
@@ -521,7 +521,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Single)),
             Tile::Basic(BasicTile::new(TileColor::Red, 10)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -531,7 +531,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Single)),
             Tile::Basic(BasicTile::new(TileColor::Red, 9)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -542,7 +542,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 2)),
             Tile::Basic(BasicTile::new(TileColor::Red, 3)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -552,7 +552,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Single)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -562,7 +562,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
             Tile::Joker(Joker::new(JokerVariant::Single)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -573,7 +573,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
             Tile::Joker(Joker::new(JokerVariant::Single)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     // DOUBLE JOKER
@@ -585,7 +585,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -594,7 +594,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 7)),
             Tile::Joker(Joker::new(JokerVariant::Double)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -605,7 +605,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Double)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -615,7 +615,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Double)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 11)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -625,7 +625,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Double)),
             Tile::Basic(BasicTile::new(TileColor::Red, 11)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -636,7 +636,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Double)),
             Tile::Basic(BasicTile::new(TileColor::Black, 8)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     // MIRROR JOKER
@@ -650,7 +650,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -662,7 +662,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Black, 8)),
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -674,7 +674,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Black, 7)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -686,7 +686,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -699,7 +699,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Red, 6)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -711,7 +711,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Mirror)),
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     // COLOR CHANGE JOKER
@@ -725,7 +725,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 10)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -737,7 +737,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 9)),
             Tile::Basic(BasicTile::new(TileColor::Red, 10)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -749,7 +749,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
             Tile::Basic(BasicTile::new(TileColor::Red, 9)),
         ];
-        assert_eq!(is_valid_set(set), false);
+        assert_eq!(is_valid_set(&set), false);
     }
 
     #[test]
@@ -761,7 +761,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 10)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -771,7 +771,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -781,7 +781,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -792,7 +792,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 9)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -803,7 +803,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Basic(BasicTile::new(TileColor::Orange, 9)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     // MIXED JOKERS
@@ -819,7 +819,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Single)),
             Tile::Basic(BasicTile::new(TileColor::Red, 6)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -833,7 +833,7 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 6)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -847,7 +847,7 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 7)),
             Tile::Basic(BasicTile::new(TileColor::Red, 6)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 
     #[test]
@@ -861,6 +861,6 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::Double)),
             Tile::Joker(Joker::new(JokerVariant::Double)),
         ];
-        assert_eq!(is_valid_set(set), true);
+        assert_eq!(is_valid_set(&set), true);
     }
 }
