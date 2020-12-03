@@ -281,15 +281,128 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
     }
     let mut left = mirror_index - 1;
     let mut right = mirror_index + 1;
+
+    // Record-keeping flag for incrementing pointers to double jokers.
+    let mut incr_double_joker = false;
+
     while left >= 0 && right < set.len() {
         if left == 0 && right != set.len() - 1 || left != 0 && right == set.len() {
             return false;
         }
-        if set[left] != set[right] {
-            return false;
+        match &set[left] {
+            Tile::Basic(bl) => match &set[right] {
+                Tile::Basic(br) => {
+                    if bl != br {
+                        return false;
+                    }
+                    left -= 1;
+                    right += 1;
+                }
+                Tile::Joker(jr) => match jr.variant {
+                    JokerVariant::Single => {
+                        left -= 1;
+                        right += 1;
+                    }
+                    JokerVariant::Double => {
+                        if incr_double_joker {
+                            right -= 1;
+                            incr_double_joker = false;
+                        } else {
+                            incr_double_joker = true;
+                        }
+                        left -= 1;
+                    }
+                    JokerVariant::Mirror => {
+                        return false;
+                    }
+                    JokerVariant::ColorChange => {
+                        return false;
+                    }
+                },
+            },
+            Tile::Joker(jl) => match &set[right] {
+                Tile::Basic(b) => match jl.variant {
+                    JokerVariant::Single => {
+                        left -= 1;
+                        right -= 1;
+                    }
+                    JokerVariant::Double => {
+                        if incr_double_joker {
+                            left -= 1;
+                            incr_double_joker = false;
+                        } else {
+                            incr_double_joker = true;
+                        }
+                        right -= 1;
+                    }
+                    JokerVariant::Mirror => {
+                        return false;
+                    }
+                    JokerVariant::ColorChange => {
+                        return false;
+                    }
+                },
+                Tile::Joker(jr) => match jl.variant {
+                    JokerVariant::Single => match jr.variant {
+                        JokerVariant::Single => {
+                            left -= 1;
+                            right -= 1;
+                        }
+                        JokerVariant::Double => {
+                            if incr_double_joker {
+                                right += 1;
+                                incr_double_joker = false;
+                            } else {
+                                incr_double_joker = true;
+                            }
+                            left -= 1;
+                        }
+                        JokerVariant::Mirror => {
+                            return false;
+                        }
+                        JokerVariant::ColorChange => {
+                            return false;
+                        }
+                    },
+                    JokerVariant::Double => match jr.variant {
+                        JokerVariant::Single => {
+                            if incr_double_joker {
+                                left -= 1;
+                                incr_double_joker = false;
+                            } else {
+                                incr_double_joker = true;
+                            }
+                            right += 1;
+                        }
+                        JokerVariant::Double => {
+                            left -= 1;
+                            right -= 1;
+                        }
+                        JokerVariant::Mirror => {
+                            return false;
+                        }
+                        JokerVariant::ColorChange => {
+                            return false;
+                        }
+                    },
+                    JokerVariant::Mirror => {
+                        return false;
+                    }
+                    JokerVariant::ColorChange => match jr.variant {
+                        JokerVariant::Single => {
+                            return false;
+                        }
+                        JokerVariant::Double => {
+                            return false;
+                        }
+                        JokerVariant::Mirror => {
+                            return false;
+                        }
+                        JokerVariant::ColorChange => continue,
+                    },
+                },
+            },
         }
-        left -= 1;
-        right += 1;
     }
     return true;
 }
@@ -719,6 +832,34 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 6)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_mixed_3() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+        ];
+        assert_eq!(is_valid_set(set), true);
+    }
+
+    #[test]
+    fn test_valid_mixed_4() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 7)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 9)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
         ];
         assert_eq!(is_valid_set(set), true);
     }
