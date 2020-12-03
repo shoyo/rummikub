@@ -106,13 +106,13 @@ enum Parsing {
         size: u8,
     },
     Undetermined {
-        /// `tile_seen` stores the first basic tile in the sequence. Its value is None until a basic
-        /// tile is encountered.
+        /// `tile_seen` stores the first basic tile in the sequence, and the distance between that tile
+        /// and the current position as a tuple. The value is None until a basic tile is encountered.
         /// After a second basic tile is encountered, `tile_seen` is used to determined whether the
         /// sequence is a run or group, or is invalid.
-        /// Any sequence can be definitely identified as a run, group, or invalid with two basic
-        /// tiles.
-        tile_seen: Option<BasicTile>,
+        /// Any sequence can be definitely identified as a run, group, or invalid as soon as two basic
+        /// tiles are encountered.
+        tile_seen: Option<(BasicTile, u8)>,
 
         /// `size` tracks the current length of the sequence.
         size: u8,
@@ -280,8 +280,8 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                 Tile::Basic(t) => {
                     _assert_valid_tile_value(t.value);
                     match tile_seen {
-                        Some(ts) => {
-                            if t.value == ts.value + 1 && t.color == ts.color {
+                        Some((ts, dist)) => {
+                            if t.value == ts.value + *dist && t.color == ts.color {
                                 // Check that the starting value of the run is valid.
                                 // Ex. J J 3 4 .. is valid
                                 //     J J 2 3 .. is NOT valid
@@ -339,22 +339,28 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                                 return false;
                             }
                             *size += 1;
-                            *tile_seen = Some(BasicTile::new(t.color, t.value));
+                            *tile_seen = Some((BasicTile::new(t.color, t.value), 1));
                         }
                     }
                 }
                 Tile::Joker(j) => match j.variant {
                     JokerVariant::Single => {
+                        if let Some((_, dist)) = tile_seen {
+                            *dist += 1;
+                        }
                         *size += 1;
                     }
                     JokerVariant::Double => {
+                        if let Some((_, dist)) = tile_seen {
+                            *dist += 1;
+                        }
                         *size += 2;
                     }
                     JokerVariant::Mirror => {
                         _is_symmetric(&set, index);
                     }
                     JokerVariant::ColorChange => match tile_seen {
-                        Some(ts) => {
+                        Some((ts, _)) => {
                             let mut allow = HashMap::new();
                             allow.insert(TileColor::Black, true);
                             allow.insert(TileColor::Red, true);
@@ -423,11 +429,17 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                     if bl != br {
                         return false;
                     }
+                    if left == 0 {
+                        break;
+                    }
                     left -= 1;
                     right += 1;
                 }
                 Tile::Joker(jr) => match jr.variant {
                     JokerVariant::Single => {
+                        if left == 0 {
+                            break;
+                        }
                         left -= 1;
                         right += 1;
                     }
@@ -437,6 +449,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                             incr_double_joker = false;
                         } else {
                             incr_double_joker = true;
+                        }
+                        if left == 0 {
+                            break;
                         }
                         left -= 1;
                     }
@@ -451,11 +466,17 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
             Tile::Joker(jl) => match &set[right] {
                 Tile::Basic(_) => match jl.variant {
                     JokerVariant::Single => {
+                        if left == 0 {
+                            break;
+                        }
                         left -= 1;
                         right += 1;
                     }
                     JokerVariant::Double => {
                         if incr_double_joker {
+                            if left == 0 {
+                                break;
+                            }
                             left -= 1;
                             incr_double_joker = false;
                         } else {
@@ -473,6 +494,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                 Tile::Joker(jr) => match jl.variant {
                     JokerVariant::Single => match jr.variant {
                         JokerVariant::Single => {
+                            if left == 0 {
+                                break;
+                            }
                             left -= 1;
                             right += 1;
                         }
@@ -482,6 +506,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                                 incr_double_joker = false;
                             } else {
                                 incr_double_joker = true;
+                            }
+                            if left == 0 {
+                                break;
                             }
                             left -= 1;
                         }
@@ -495,6 +522,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                     JokerVariant::Double => match jr.variant {
                         JokerVariant::Single => {
                             if incr_double_joker {
+                                if left == 0 {
+                                    break;
+                                }
                                 left -= 1;
                                 incr_double_joker = false;
                             } else {
@@ -503,6 +533,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                             right += 1;
                         }
                         JokerVariant::Double => {
+                            if left == 0 {
+                                break;
+                            }
                             left -= 1;
                             right += 1;
                         }
@@ -527,6 +560,9 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                             return false;
                         }
                         JokerVariant::ColorChange => {
+                            if left == 0 {
+                                break;
+                            }
                             left -= 1;
                             right += 1;
                         }
@@ -536,7 +572,7 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
         }
     }
     if left != 0 || right != set.len() - 1 {
-        panic!("ERROR: left and right indexes mismatched during traversal");
+        return false;
     }
     return true;
 }
