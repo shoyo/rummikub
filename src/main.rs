@@ -77,7 +77,9 @@ impl fmt::Display for JokerVariant {
 
 enum Parsing {
     Run {
-        last_value: TileValue,
+        // Last value of a run can be unknown if the sequence begins with a color change joker.
+        last_value: Option<TileValue>,
+        //        last_color: Option<TileColor>,
         allowed: HashMap<TileColor, bool>,
     },
     Group {
@@ -110,24 +112,24 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
             } => match tile {
                 Tile::Basic(t) => {
                     _assert_valid_tile_value(t.value);
-                    if t.value != *last_value + 1 {
+                    if t.value != last_value.unwrap() + 1 {
                         return false;
                     }
                     if !allowed[&t.color] {
                         return false;
                     }
-                    *last_value += 1;
+                    *last_value = Some(last_value.unwrap() + 1);
                 }
                 Tile::Joker(j) => match j.variant {
                     JokerVariant::Single => {
-                        *last_value += 1;
-                        if *last_value > 13 {
+                        *last_value = Some(last_value.unwrap() + 1);
+                        if last_value.unwrap() > 13 {
                             return false;
                         }
                     }
                     JokerVariant::Double => {
-                        *last_value += 2;
-                        if *last_value > 13 {
+                        *last_value = Some(last_value.unwrap() + 2);
+                        if last_value.unwrap() > 13 {
                             return false;
                         }
                     }
@@ -135,11 +137,16 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                         return _handle_mirror_joker(&set, index);
                     }
                     JokerVariant::ColorChange => {
-                        *last_value += 1;
+                        *last_value = Some(last_value.unwrap() + 1);
                         allowed.insert(TileColor::Black, true);
                         allowed.insert(TileColor::Red, true);
                         allowed.insert(TileColor::Blue, true);
                         allowed.insert(TileColor::Orange, true);
+
+                        match last_value {
+                            Some(_) => continue,
+                            None => continue,
+                        }
                     }
                 },
             },
@@ -200,7 +207,7 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                                 allowed.insert(color, true);
 
                                 parsing = Parsing::Run {
-                                    last_value: t.value,
+                                    last_value: Some(t.value),
                                     allowed: allowed,
                                 };
                             } else if t.value == value && t.color != color {
@@ -256,8 +263,31 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                         _handle_mirror_joker(&set, index);
                     }
                     JokerVariant::ColorChange => match tile_seen {
-                        Some((value, color)) => {}
-                        None => {}
+                        Some((value, color)) => {
+                            let mut allowed = HashMap::new();
+                            allowed.insert(TileColor::Black, true);
+                            allowed.insert(TileColor::Red, true);
+                            allowed.insert(TileColor::Blue, true);
+                            allowed.insert(TileColor::Orange, true);
+                            allowed.insert(*color, false);
+
+                            parsing = Parsing::Run {
+                                last_value: Some(*value + 1),
+                                allowed: allowed,
+                            };
+                        }
+                        None => {
+                            let mut allowed = HashMap::new();
+                            allowed.insert(TileColor::Black, true);
+                            allowed.insert(TileColor::Red, true);
+                            allowed.insert(TileColor::Blue, true);
+                            allowed.insert(TileColor::Orange, true);
+
+                            parsing = Parsing::Run {
+                                last_value: None,
+                                allowed: allowed,
+                            }
+                        }
                     },
                 },
             },
@@ -321,7 +351,7 @@ fn _handle_mirror_joker(set: &Vec<Tile>, mirror_index: usize) -> bool {
                 },
             },
             Tile::Joker(jl) => match &set[right] {
-                Tile::Basic(b) => match jl.variant {
+                Tile::Basic(_) => match jl.variant {
                     JokerVariant::Single => {
                         left -= 1;
                         right -= 1;
