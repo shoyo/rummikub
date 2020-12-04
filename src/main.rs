@@ -405,26 +405,39 @@ fn _assert_valid_tile_value(value: TileValue) {
     }
 }
 
-/// Return whether the set represents symmetric values across the given axis.
+/// Return whether the set contains logically symmetric tiles across the given axis.
 ///
 /// Examples:
 /// 3 4 5 | 5 4 3 .. is symmetric
 /// 3 J 5 | 5 4 3 .. is symmetric
 /// 3 J 5 | 5 DJ  .. is symmetric
 /// DJ DJ | 5 4 3 .. is NOT symmetric
+///
+///
+/// Implementation:
+/// Two pointers traverse outward in opposite directions from the axis, and we compare the two
+/// tiles that they point to. If in any given iteration, the two tiles are not logically
+/// equivalent, we know that the set is not symmetric. We stop traversing once either pointer
+/// reaches the logical end of the set. We do a final check to see if both pointers have reached
+/// opposite ends of the set.
 fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
-    if set.len() < 3 {
+    if axis == 0 || axis == set.len() - 1 {
         return false;
     }
+
+    // Left and right pointers.
     let mut left = axis - 1;
     let mut right = axis + 1;
+
+    // Record-keeping flags for incrementing pointers.
     let mut incr_left: bool;
     let mut incr_right: bool;
 
-    // Record-keeping flag for incrementing pointers to double jokers.
-    let mut incr_double_joker = false;
+    // Record-keeping flags for incrementing pointers to double jokers.
+    let mut incr_dj_left = false;
+    let mut incr_dj_right = false;
 
-    while right < set.len() {
+    loop {
         match &set[left] {
             Tile::Basic(bl) => match &set[right] {
                 Tile::Basic(br) => {
@@ -440,12 +453,12 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                         incr_right = true;
                     }
                     JokerVariant::Double => {
-                        if incr_double_joker {
+                        if incr_dj_right {
                             incr_right = true;
-                            incr_double_joker = false;
+                            incr_dj_right = false;
                         } else {
                             incr_right = false;
-                            incr_double_joker = true;
+                            incr_dj_right = true;
                         }
                         incr_left = true;
                     }
@@ -457,42 +470,24 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                     }
                 },
             },
-            Tile::Joker(jl) => match &set[right] {
-                Tile::Basic(_) => match jl.variant {
-                    JokerVariant::Single => {
+            Tile::Joker(jl) => match jl.variant {
+                JokerVariant::Single => match &set[right] {
+                    Tile::Basic(_) => {
                         incr_left = true;
                         incr_right = true;
                     }
-                    JokerVariant::Double => {
-                        if incr_double_joker {
-                            incr_left = true;
-                            incr_double_joker = false;
-                        } else {
-                            incr_left = false;
-                            incr_double_joker = true;
-                        }
-                        incr_right = true;
-                    }
-                    JokerVariant::Mirror => {
-                        return false;
-                    }
-                    JokerVariant::ColorChange => {
-                        return false;
-                    }
-                },
-                Tile::Joker(jr) => match jl.variant {
-                    JokerVariant::Single => match jr.variant {
+                    Tile::Joker(jr) => match jr.variant {
                         JokerVariant::Single => {
                             incr_left = true;
                             incr_right = true;
                         }
                         JokerVariant::Double => {
-                            if incr_double_joker {
+                            if incr_dj_right {
                                 incr_right = true;
-                                incr_double_joker = false;
+                                incr_dj_right = false;
                             } else {
                                 incr_right = false;
-                                incr_double_joker = true;
+                                incr_dj_right = true;
                             }
                             incr_left = true;
                         }
@@ -503,20 +498,44 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                             return false;
                         }
                     },
-                    JokerVariant::Double => match jr.variant {
+                },
+                JokerVariant::Double => match &set[right] {
+                    Tile::Basic(_) => {
+                        if incr_dj_left {
+                            incr_left = true;
+                            incr_dj_left = false;
+                        } else {
+                            incr_left = false;
+                            incr_dj_left = true;
+                        }
+                        incr_right = true;
+                    }
+                    Tile::Joker(jr) => match jr.variant {
                         JokerVariant::Single => {
-                            if incr_double_joker {
+                            if incr_dj_left {
                                 incr_left = true;
-                                incr_double_joker = false;
+                                incr_dj_left = false;
                             } else {
                                 incr_left = false;
-                                incr_double_joker = true;
+                                incr_dj_left = true;
                             }
                             incr_right = true;
                         }
                         JokerVariant::Double => {
-                            incr_left = true;
-                            incr_right = true;
+                            if incr_dj_left {
+                                incr_left = true;
+                                incr_dj_left = false;
+                            } else {
+                                incr_left = false;
+                                incr_dj_left = true;
+                            }
+                            if incr_dj_right {
+                                incr_right = true;
+                                incr_dj_right = false;
+                            } else {
+                                incr_right = false;
+                                incr_dj_right = true;
+                            }
                         }
                         JokerVariant::Mirror => {
                             return false;
@@ -525,10 +544,15 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                             return false;
                         }
                     },
-                    JokerVariant::Mirror => {
+                },
+                JokerVariant::Mirror => {
+                    return false;
+                }
+                JokerVariant::ColorChange => match &set[right] {
+                    Tile::Basic(_) => {
                         return false;
                     }
-                    JokerVariant::ColorChange => match jr.variant {
+                    Tile::Joker(jr) => match jr.variant {
                         JokerVariant::Single => {
                             return false;
                         }
@@ -545,6 +569,26 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
                     },
                 },
             },
+        }
+        if left == 0 {
+            if let Tile::Joker(joker) = &set[left] {
+                if joker.variant == JokerVariant::Double && incr_dj_left {
+                    if incr_right {
+                        right += 1;
+                    }
+                    continue;
+                }
+            }
+        }
+        if right == set.len() - 1 {
+            if let Tile::Joker(joker) = &set[right] {
+                if joker.variant == JokerVariant::Double && incr_dj_right {
+                    if incr_left {
+                        left -= 1;
+                    }
+                    continue;
+                }
+            }
         }
         if left == 0 || right == set.len() - 1 {
             break;
@@ -556,6 +600,7 @@ fn _is_symmetric(set: &Vec<Tile>, axis: usize) -> bool {
             right += 1;
         }
     }
+
     if left != 0 || right != set.len() - 1 {
         return false;
     }
@@ -1058,7 +1103,7 @@ mod tests {
     }
 
     #[test]
-    fn test_valid_mixed_7() {
+    fn test_invalid_mixed_7() {
         let set = vec![
             Tile::Basic(BasicTile::new(TileColor::Red, 6)),
             Tile::Joker(Joker::new(JokerVariant::Double)),
@@ -1069,5 +1114,19 @@ mod tests {
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
         ];
         assert_eq!(is_valid_set(&set), false);
+    }
+
+    #[test]
+    fn test_valid_mixed_8() {
+        let set = vec![
+            Tile::Basic(BasicTile::new(TileColor::Red, 5)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 6)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Joker(Joker::new(JokerVariant::Mirror)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 8)),
+            Tile::Joker(Joker::new(JokerVariant::Double)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 5)),
+        ];
+        assert_eq!(is_valid_set(&set), true);
     }
 }
