@@ -2,7 +2,6 @@
 use std::collections::HashMap;
 use std::fmt;
 
-/// A single Rummikub tile
 #[derive(Debug, PartialEq)]
 enum Tile {
     Basic(BasicTile),
@@ -136,104 +135,102 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                 ref mut last_value,
                 ref mut allow,
                 ref mut size,
-            } => {
-                match tile {
-                    Tile::Basic(t) => {
-                        _assert_valid_tile_value(t.value);
-                        if !allow[&t.color] {
-                            return false;
+            } => match tile {
+                Tile::Basic(t) => {
+                    _assert_valid_tile_value(t.value);
+                    if !allow[&t.color] {
+                        return false;
+                    }
+                    if t.value <= *size {
+                        return false;
+                    }
+                    *size += 1;
+                    match last_value {
+                        Some(ref mut val) => {
+                            *val += 1;
+                            if t.value != *val {
+                                return false;
+                            }
                         }
-                        if t.value <= *size {
-                            return false;
+                        None => {
+                            allow.insert(TileColor::Black, false);
+                            allow.insert(TileColor::Red, false);
+                            allow.insert(TileColor::Blue, false);
+                            allow.insert(TileColor::Orange, false);
+                            allow.insert(t.color, true);
+                            *last_value = Some(t.value);
                         }
+                    }
+                }
+                Tile::Joker(j) => match j.variant {
+                    JokerVariant::Single => {
                         *size += 1;
                         match last_value {
                             Some(ref mut val) => {
                                 *val += 1;
-                                if t.value != *val {
+                                if *val > 13 {
                                     return false;
                                 }
                             }
-                            None => {
-                                allow.insert(TileColor::Black, false);
-                                allow.insert(TileColor::Red, false);
-                                allow.insert(TileColor::Blue, false);
-                                allow.insert(TileColor::Orange, false);
-                                allow.insert(t.color, true);
-                                *last_value = Some(t.value);
-                            }
+                            None => continue,
                         }
                     }
-                    Tile::Joker(j) => match j.variant {
-                        JokerVariant::Single => {
-                            *size += 1;
-                            match last_value {
-                                Some(ref mut val) => {
-                                    *val += 1;
-                                    if *val > 13 {
-                                        return false;
-                                    }
+                    JokerVariant::Double => {
+                        *size += 2;
+                        match last_value {
+                            Some(ref mut val) => {
+                                *val += 2;
+                                if *val > 13 {
+                                    return false;
                                 }
-                                None => continue,
                             }
+                            None => continue,
                         }
-                        JokerVariant::Double => {
-                            *size += 2;
-                            match last_value {
-                                Some(ref mut val) => {
-                                    *val += 2;
-                                    if *val > 13 {
-                                        return false;
-                                    }
+                    }
+                    JokerVariant::Mirror => {
+                        return _is_symmetric(&set, index);
+                    }
+                    JokerVariant::ColorChange => {
+                        *size += 1;
+                        match last_value {
+                            Some(ref mut val) => {
+                                *val += 1;
+                                if *val > 13 {
+                                    return false;
                                 }
-                                None => continue,
-                            }
-                        }
-                        JokerVariant::Mirror => {
-                            return _is_symmetric(&set, index);
-                        }
-                        JokerVariant::ColorChange => {
-                            *size += 1;
-                            match last_value {
-                                Some(ref mut val) => {
-                                    *val += 1;
-                                    if *val > 13 {
-                                        return false;
-                                    }
 
-                                    let allow_cnt = allow
-                                        .iter()
-                                        .filter(|(_, v)| **v)
-                                        .collect::<Vec<(&TileColor, &bool)>>()
-                                        .len();
-                                    if allow_cnt == 1 {
-                                        for perm in allow.values_mut() {
-                                            if *perm {
-                                                *perm = false;
-                                            } else {
-                                                *perm = true;
-                                            }
+                                let allow_cnt = allow
+                                    .iter()
+                                    .filter(|(_, v)| **v)
+                                    .collect::<Vec<(&TileColor, &bool)>>()
+                                    .len();
+                                if allow_cnt == 1 {
+                                    for perm in allow.values_mut() {
+                                        if *perm {
+                                            *perm = false;
+                                        } else {
+                                            *perm = true;
                                         }
-                                    } else if allow_cnt == 2 {
-                                        panic!("Unexpected number of allowed colors (2) upon color change");
-                                    } else if allow_cnt == 3 {
-                                        allow.insert(TileColor::Black, true);
-                                        allow.insert(TileColor::Red, true);
-                                        allow.insert(TileColor::Blue, true);
-                                        allow.insert(TileColor::Orange, true);
                                     }
-                                }
-                                None => {
+                                } else if allow_cnt == 3 {
                                     allow.insert(TileColor::Black, true);
                                     allow.insert(TileColor::Red, true);
                                     allow.insert(TileColor::Blue, true);
                                     allow.insert(TileColor::Orange, true);
+                                } else {
+                                    panic!("Unexpected number of allowed colors ({}) upon color change", allow_cnt);
                                 }
                             }
+                            None => {
+                                allow.insert(TileColor::Black, true);
+                                allow.insert(TileColor::Red, true);
+                                allow.insert(TileColor::Blue, true);
+                                allow.insert(TileColor::Orange, true);
+                            }
                         }
-                    },
-                }
-            }
+                    }
+                },
+            },
             Parsing::Group {
                 ref mut value,
                 ref mut allow,
@@ -289,14 +286,12 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                                     return false;
                                 }
 
-                                // Tile sequence is confirmed to be a run, so transition the parser
-                                // state.
                                 let mut allow = HashMap::new();
                                 allow.insert(TileColor::Black, false);
                                 allow.insert(TileColor::Red, false);
                                 allow.insert(TileColor::Blue, false);
                                 allow.insert(TileColor::Orange, false);
-                                allow.insert(ts.color, true);
+                                allow.insert(t.color, true);
 
                                 parsing = Parsing::Run {
                                     last_value: Some(t.value),
@@ -311,8 +306,6 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                                     return false;
                                 }
 
-                                // Tile sequence is confirmed to be a group, so transition the parser
-                                // state.
                                 let mut allow = HashMap::new();
                                 allow.insert(TileColor::Black, true);
                                 allow.insert(TileColor::Red, true);
@@ -340,6 +333,21 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                             }
                             *size += 1;
                             *tile_seen = Some((BasicTile::new(t.color, t.value), 1));
+
+                            if *size > 4 {
+                                let mut allow = HashMap::new();
+                                allow.insert(TileColor::Black, false);
+                                allow.insert(TileColor::Red, false);
+                                allow.insert(TileColor::Blue, false);
+                                allow.insert(TileColor::Orange, false);
+                                allow.insert(t.color, true);
+
+                                parsing = Parsing::Run {
+                                    last_value: None,
+                                    allow: allow,
+                                    size: *size,
+                                }
+                            }
                         }
                     }
                 }
@@ -349,15 +357,77 @@ fn is_valid_set(set: &Vec<Tile>) -> bool {
                             *dist += 1;
                         }
                         *size += 1;
+                        if *size > 4 {
+                            match tile_seen {
+                                Some((ts, dist)) => {
+                                    let mut allow = HashMap::new();
+                                    allow.insert(TileColor::Black, false);
+                                    allow.insert(TileColor::Red, false);
+                                    allow.insert(TileColor::Blue, false);
+                                    allow.insert(TileColor::Orange, false);
+                                    allow.insert(ts.color, true);
+
+                                    parsing = Parsing::Run {
+                                        last_value: Some(ts.value + *dist),
+                                        allow: allow,
+                                        size: *size,
+                                    }
+                                }
+                                None => {
+                                    let mut allow = HashMap::new();
+                                    allow.insert(TileColor::Black, true);
+                                    allow.insert(TileColor::Red, true);
+                                    allow.insert(TileColor::Blue, true);
+                                    allow.insert(TileColor::Orange, true);
+
+                                    parsing = Parsing::Run {
+                                        last_value: None,
+                                        allow: allow,
+                                        size: *size,
+                                    }
+                                }
+                            }
+                        }
                     }
                     JokerVariant::Double => {
                         if let Some((_, dist)) = tile_seen {
                             *dist += 2;
                         }
                         *size += 2;
+                        if *size > 4 {
+                            match tile_seen {
+                                Some((ts, dist)) => {
+                                    let mut allow = HashMap::new();
+                                    allow.insert(TileColor::Black, false);
+                                    allow.insert(TileColor::Red, false);
+                                    allow.insert(TileColor::Blue, false);
+                                    allow.insert(TileColor::Orange, false);
+                                    allow.insert(ts.color, true);
+
+                                    parsing = Parsing::Run {
+                                        last_value: Some(ts.value + *dist - 1),
+                                        allow: allow,
+                                        size: *size,
+                                    }
+                                }
+                                None => {
+                                    let mut allow = HashMap::new();
+                                    allow.insert(TileColor::Black, true);
+                                    allow.insert(TileColor::Red, true);
+                                    allow.insert(TileColor::Blue, true);
+                                    allow.insert(TileColor::Orange, true);
+
+                                    parsing = Parsing::Run {
+                                        last_value: None,
+                                        allow: allow,
+                                        size: *size,
+                                    }
+                                }
+                            }
+                        }
                     }
                     JokerVariant::Mirror => {
-                        _is_symmetric(&set, index);
+                        return _is_symmetric(&set, index);
                     }
                     JokerVariant::ColorChange => match tile_seen {
                         Some((ts, _)) => {
