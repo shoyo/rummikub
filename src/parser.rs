@@ -48,7 +48,7 @@ enum Parsing {
 }
 
 /// Given an ordered set of Rummikub tiles, return whether the set is valid.
-fn is_valid_set(set: &Vec<Tile>) -> bool {
+pub fn is_valid_set(set: &Vec<Tile>) -> bool {
     if set.len() < 3 {
         return false;
     }

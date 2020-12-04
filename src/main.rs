@@ -1,9 +1,6 @@
 /// Copyright (c) 2020, Shoyo Inokuchi
+use rummikub::solve::can_win;
 use rummikub::tiles::{BasicTile, Joker, JokerVariant, Tile, TileColor, TileValue};
-
-fn can_win(_board: Vec<Vec<Tile>>, _rack: Vec<Tile>) -> Result<(), ()> {
-    Err(())
-}
 
 fn main() {
     let board = vec![vec![
@@ -16,7 +13,7 @@ fn main() {
         Tile::Basic(BasicTile::new(TileColor::Blue, 5)),
     ];
 
-    match can_win(board, rack) {
+    match can_win(&board, &rack) {
         Ok(moves) => {
             println!("{:?}", moves);
         }
