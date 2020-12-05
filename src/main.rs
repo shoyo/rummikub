@@ -1,10 +1,11 @@
+/// Copyright (c) 2020, Shoyo Inokuchi
 use rummikub::parser::is_valid_set;
 use rummikub::tiles::deserialize_set;
-/// Copyright (c) 2020, Shoyo Inokuchi
 use std::io::{self, Write};
 
 fn main() {
     println!("Input a tile sequence:");
+    let mut set = Vec::new();
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -14,13 +15,13 @@ fn main() {
             .read_line(&mut buf)
             .expect("Failed to read from stdin");
 
-        let set = match deserialize_set(buf) {
-            Ok(s) => s,
+        match deserialize_set(buf.trim()) {
+            Ok(s) => set = s,
             Err(e) => {
                 println!("{}", e);
-                std::process::exit(1);
+                continue;
             }
-        };
+        }
 
         match is_valid_set(&set) {
             true => println!("Valid set."),

@@ -95,7 +95,7 @@ impl fmt::Display for JokerVariant {
 /// Examples:
 ///     "r1 r2 r3"
 ///     "a6 c u8 u9 m j u8 c a6"
-pub fn deserialize_set(input: String) -> Result<Vec<Tile>, String> {
+pub fn deserialize_set(input: &str) -> Result<Vec<Tile>, String> {
     let mut stream = input.split(' ');
     let mut vec = Vec::new();
     while let Some(token) = stream.next() {
@@ -161,10 +161,10 @@ pub fn deserialize_set(input: String) -> Result<Vec<Tile>, String> {
 fn parse_tile_value(token: &str) -> Result<TileValue, String> {
     let val = match token.parse::<TileValue>() {
         Ok(v) => v,
-        Err(_) => return Err(format!("Invalid tile value in token: {}", token)),
+        Err(_) => return Err(format!("Invalid tile value in token: \"{}\"", token)),
     };
     if val == 0 || val > 13 {
-        return Err(format!("Invalid tile value {} in token: {}", val, token));
+        return Err(format!("Invalid tile value in token: \"{}\"", token));
     }
     Ok(val)
 }
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_vectorize_set_1() {
-        let input = "r1 r2 r3 j d r7".to_string();
+        let input = "r1 r2 r3 j d r7";
         let expected = vec![
             Tile::Basic(BasicTile::new(TileColor::Red, 1)),
             Tile::Basic(BasicTile::new(TileColor::Red, 2)),
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_vectorize_set_2() {
-        let input = "a6 c u8 u9 m j u8 c a6".to_string();
+        let input = "a6 c u8 u9 m j u8 c a6";
         let expected = vec![
             Tile::Basic(BasicTile::new(TileColor::Black, 6)),
             Tile::Joker(Joker::new(JokerVariant::ColorChange)),
