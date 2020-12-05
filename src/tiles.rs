@@ -97,7 +97,6 @@ impl fmt::Display for JokerVariant {
 ///     "a6 c u8 u9 m j u8 c a6"
 pub fn deserialize_set(input: String) -> Result<Vec<Tile>, String> {
     let mut stream = input.split(' ');
-    println!("{:?}", stream);
     let mut vec = Vec::new();
     while let Some(token) = stream.next() {
         match token.chars().nth(0).unwrap() {

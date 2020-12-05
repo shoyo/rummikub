@@ -1,22 +1,30 @@
+use rummikub::parser::is_valid_set;
+use rummikub::tiles::deserialize_set;
 /// Copyright (c) 2020, Shoyo Inokuchi
-use rummikub::solve::can_win;
-use rummikub::tiles::{BasicTile, Joker, JokerVariant, Tile, TileColor, TileValue};
+use std::io::{self, Write};
 
 fn main() {
-    let board = vec![vec![
-        Tile::Basic(BasicTile::new(TileColor::Black, 2)),
-        Tile::Basic(BasicTile::new(TileColor::Black, 3)),
-        Tile::Basic(BasicTile::new(TileColor::Black, 4)),
-    ]];
-    let rack = vec![
-        Tile::Basic(BasicTile::new(TileColor::Black, 10)),
-        Tile::Basic(BasicTile::new(TileColor::Blue, 5)),
-    ];
+    println!("Input a tile sequence:");
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
 
-    match can_win(&board, &rack) {
-        Ok(moves) => {
-            println!("{:?}", moves);
+        let mut buf = String::new();
+        io::stdin()
+            .read_line(&mut buf)
+            .expect("Failed to read from stdin");
+
+        let set = match deserialize_set(buf) {
+            Ok(s) => s,
+            Err(e) => {
+                println!("{}", e);
+                std::process::exit(1);
+            }
+        };
+
+        match is_valid_set(&set) {
+            true => println!("Valid set."),
+            false => println!("Invalid set."),
         }
-        Err(_) => println!("No winning move."),
     }
 }

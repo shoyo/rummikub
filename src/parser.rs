@@ -1,6 +1,6 @@
 /// Copyright (c) 2020, Shoyo Inokuchi
 use crate::colors::Colors;
-use crate::tiles::{BasicTile, Joker, JokerVariant, Tile, TileColor, TileValue};
+use crate::tiles::{BasicTile, JokerVariant, Tile, TileColor, TileValue};
 use std::collections::HashMap;
 
 enum Parsing {
