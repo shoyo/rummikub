@@ -233,17 +233,18 @@ pub fn is_valid_set(set: &Vec<Tile>) -> bool {
                             }
                         }
                         None => {
-                            // Check that the current sequence is not an invalid run.
-                            // (Group can be ruled out due to the total length being >= 5.)
-                            // Ex. J J DJ 5 .. is valid
-                            //     J J DJ 4 .. is NOT valid
-                            if t.value <= *size {
-                                return false;
-                            }
                             *size += 1;
                             *tile_seen = Some((BasicTile::new(t.color, t.value), 1));
 
                             if *size > 4 {
+                                // Check that the current sequence is not an invalid run.
+                                // (Group can be ruled out due to the total length being >= 5.)
+                                // Ex. J J DJ 5 .. is valid
+                                //     J J DJ 4 .. is NOT valid
+                                if t.value <= *size {
+                                    return false;
+                                }
+
                                 let allow = Colors::only(t.color);
                                 parsing = Parsing::Run {
                                     last_value: None,
@@ -679,6 +680,17 @@ mod tests {
             Tile::Basic(BasicTile::new(TileColor::Red, 8)),
             Tile::Joker(Joker::new(JokerVariant::Single)),
             Tile::Basic(BasicTile::new(TileColor::Blue, 8)),
+        ];
+        assert_eq!(is_valid_set(&set), true);
+    }
+
+    #[test]
+    fn test_valid_group_with_single_joker_2() {
+        let set = vec![
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Joker(Joker::new(JokerVariant::Single)),
+            Tile::Basic(BasicTile::new(TileColor::Red, 1)),
         ];
         assert_eq!(is_valid_set(&set), true);
     }
